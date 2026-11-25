@@ -9,13 +9,20 @@
 
 * { box-sizing: border-box; }
 
-body {
+html, body {
   margin: 0;
+  height: 100%;
+}
+
+body {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   background: #0d1526;
   color: var(--panel-text);
   display: flex;
   justify-content: center;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .layout {
@@ -23,7 +30,7 @@ body {
   max-width: 480px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100%;
 }
 
 .scoreboard {
@@ -68,9 +75,10 @@ body {
 .rink-wrap {
   position: relative;
   flex: 1;
+  min-height: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   background: #0d1526;
   overflow: hidden;
 }
@@ -78,7 +86,10 @@ body {
 canvas#rink {
   background: var(--ice);
   touch-action: none;
+  display: block;
   max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
 }
 
@@ -239,4 +250,13 @@ canvas#rink {
 
 @media (min-width: 480px) {
   .instructions { flex-basis: auto; max-width: 180px; }
+}
+
+@media (max-height: 720px) {
+  .scoreboard { padding: 6px 12px; }
+  .team-score { font-size: 22px; }
+  .end-info { font-size: 12px; }
+  .controls { padding: 8px 12px 10px; gap: 8px; }
+  .turn-btn, .sweep-btn { padding: 6px 10px; font-size: 13px; }
+  .instructions { display: none; }
 }
