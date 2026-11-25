@@ -260,3 +260,7 @@ canvas#rink {
   .turn-btn, .sweep-btn { padding: 6px 10px; font-size: 13px; }
   .instructions { display: none; }
 }
+
+@media (pointer: coarse) {
+  .space-hint { display: none; }
+}
