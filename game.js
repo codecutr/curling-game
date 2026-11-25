@@ -628,10 +628,10 @@
     // Power meter
     const pct = Math.round((dist / MAX_DRAG) * 100);
     ctx.fillStyle = '#152238';
-    ctx.font = pct >= 100 ? 'bold 13px sans-serif' : '13px sans-serif';
+    ctx.font = pct >= 100 ? 'bold 24px sans-serif' : 'bold 20px sans-serif';
     ctx.textAlign = 'center';
-    const label = pct >= 100 ? `${pct}% power — Peel Weight!` : `${pct}% power`;
-    ctx.fillText(label, hack.x, hack.y - 30);
+    const label = pct >= 100 ? `${pct}% — Peel Weight!` : `${pct}% power`;
+    ctx.fillText(label, hack.x, hack.y - 36);
   }
 
   // ---- Intro: bagpiper ----
