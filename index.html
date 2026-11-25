@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curling</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="scoreboard">
+      <div class="team team-red" id="team-red">
+        <span class="team-name" id="team-name-red">Red</span>
+        <span class="team-score" id="score-red">0</span>
+      </div>
+      <div class="end-info">
+        <div id="end-label">End 1</div>
+        <div id="turn-label">Red's throw</div>
+        <div id="stones-left">16 stones left</div>
+      </div>
+      <div class="team team-yellow" id="team-yellow">
+        <span class="team-name" id="team-name-yellow">Yellow</span>
+        <span class="team-score" id="score-yellow">0</span>
+      </div>
+    </header>
+
+    <main class="rink-wrap">
+      <canvas id="rink" width="440" height="820"></canvas>
+      <div class="toast" id="toast"></div>
+      <div class="end-overlay visible" id="start-overlay">
+        <div class="end-overlay-card">
+          <h2>Set up your game</h2>
+          <div class="team-name-field">
+            <label>Game type</label>
+            <div class="turn-toggle mode-toggle">
+              <button type="button" id="mode-standard" class="turn-btn">Standard (8 stones)</button>
+              <button type="button" id="mode-doubles" class="turn-btn">Doubles (5 stones)</button>
+            </div>
+          </div>
+          <div class="team-name-field">
+            <label for="select-ends">Number of ends</label>
+            <select id="select-ends">
+              <option value="4">4 ends</option>
+              <option value="6">6 ends</option>
+              <option value="8" selected>8 ends</option>
+              <option value="10">10 ends</option>
+            </select>
+          </div>
+          <div class="team-name-field">
+            <label for="input-team-red">Red team</label>
+            <input type="text" id="input-team-red" maxlength="20" placeholder="Red" autofocus>
+          </div>
+          <div class="team-name-field">
+            <label for="input-team-yellow">Yellow team</label>
+            <input type="text" id="input-team-yellow" maxlength="20" placeholder="Yellow">
+          </div>
+          <button id="start-game-btn">Start game</button>
+        </div>
+      </div>
+      <div class="end-overlay" id="end-overlay">
+        <div class="end-overlay-card">
+          <h2 id="end-overlay-title">End complete</h2>
+          <p id="end-overlay-text"></p>
+          <button id="next-end-btn">Play next end</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="controls">
+      <div class="control-group">
+        <span class="control-label">Handle / curl</span>
+        <div class="turn-toggle">
+          <button id="curl-left" class="turn-btn">&#8630; Left</button>
+          <button id="curl-right" class="turn-btn">&#8631; Right</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label">Sweep</span>
+        <button id="sweep-btn" class="sweep-btn">Hold to sweep (or Space)</button>
+      </div>
+      <div class="control-group instructions">
+        Drag back from the stone to aim, like a slingshot. Release to throw. Sweep while it slides to carry it farther and straighten its curl.
+      </div>
+    </footer>
+  </div>
+<script src="game.js"></script>
+</body>
+</html>
