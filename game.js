@@ -122,13 +122,11 @@
   }
 
   function currentIceFriction() {
-    const mult = Math.max(MIN_ICE_FRICTION_MULT, 1 - (state.endNumber - 1) * ICE_SPEEDUP_PER_END);
-    return BASE_FRICTION * mult;
+    return CurlingLogic.computeIceFriction(BASE_FRICTION, state.endNumber, ICE_SPEEDUP_PER_END, MIN_ICE_FRICTION_MULT);
   }
 
   function currentTeam() {
-    const order = state.startingTeamIndex === 0 ? TEAMS : [TEAMS[1], TEAMS[0]];
-    return order[state.shotIndex % 2];
+    return CurlingLogic.currentTeamForShot(TEAMS, state.shotIndex, state.startingTeamIndex);
   }
 
   function shotsRemaining() {
@@ -304,19 +302,14 @@
   // ---- Computer opponent (single-team mode) ----
   function chooseAiShot() {
     const myTeam = currentTeam();
-    const inPlay = state.stones.filter((s) => !s.outOfPlay);
-    const distToButton = (s) => Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y);
-    const opponentInHouse = inPlay
-      .filter((s) => s.team !== myTeam && distToButton(s) <= RINGS[0].r)
-      .sort((a, b) => distToButton(a) - distToButton(b));
+    const bestTarget = CurlingLogic.findBestOpponentStone(state.stones, myTeam, HOUSE_X, HOUSE_Y, RINGS[0].r);
 
     let targetX;
     let targetY;
     let power;
-    if (opponentInHouse.length > 0 && Math.random() < 0.7) {
-      const target = opponentInHouse[0];
-      targetX = target.x;
-      targetY = target.y;
+    if (bestTarget && Math.random() < 0.7) {
+      targetX = bestTarget.x;
+      targetY = bestTarget.y;
       power = AI_TAKEOUT_POWER_MIN + Math.random() * AI_TAKEOUT_POWER_RANGE;
     } else {
       targetX = HOUSE_X;
@@ -554,7 +547,7 @@
     // A stone that stops touching or short of the hog line (hasn't fully crossed it) is "hogged" and
     // removed — but only on its own original delivery. A stone that already cleared the hog line on
     // an earlier shot and later gets knocked back behind it by a hit is not re-hogged.
-    if (!stone.hasRestedBefore && !stone.outOfPlay && stone.y + STONE_R >= FAR_HOG_Y) {
+    if (CurlingLogic.isHogged(stone, STONE_R, FAR_HOG_Y)) {
       stone.outOfPlay = true;
       showToast('Hogged! 🐷');
     }
@@ -572,24 +565,12 @@
   }
 
   function finishEnd() {
-    const inPlay = state.stones.filter((s) => !s.outOfPlay);
-    const dist = (s) => Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y);
-    const eligible = inPlay.filter((s) => dist(s) <= RINGS[0].r);
+    const { leader, count } = CurlingLogic.scoreEnd(state.stones, HOUSE_X, HOUSE_Y, RINGS[0].r);
 
     let text;
-    if (eligible.length === 0) {
+    if (!leader) {
       text = 'No stones in the house. Blank end — no points scored.';
     } else {
-      const byTeam = { red: [], yellow: [] };
-      eligible.forEach((s) => byTeam[s.team].push(dist(s)));
-      byTeam.red.sort((a, b) => a - b);
-      byTeam.yellow.sort((a, b) => a - b);
-      const redBest = byTeam.red[0] ?? Infinity;
-      const yellowBest = byTeam.yellow[0] ?? Infinity;
-      const leader = redBest < yellowBest ? 'red' : 'yellow';
-      const leaderDists = byTeam[leader];
-      const opponentBest = leader === 'red' ? yellowBest : redBest;
-      const count = leaderDists.filter((d) => d < opponentBest).length;
       state.scores[leader] += count;
       text = `${teamName(leader)} scores ${count} point${count === 1 ? '' : 's'} this end.`;
     }

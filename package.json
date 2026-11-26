@@ -1,0 +1,7 @@
+{
+  "name": "curling-game",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
