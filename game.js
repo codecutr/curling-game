@@ -51,6 +51,14 @@
   };
   const TEAMS = ['red', 'yellow'];
   const TEAM_COLORS = { red: '#c23b3b', yellow: '#e0b020' };
+  const COMPUTER_TEAM = 'yellow'; // the team the computer controls in single-team mode
+  const AI_THINK_DELAY_MIN = 700; // ms
+  const AI_THINK_DELAY_MAX = 1200; // ms
+  const AI_TAKEOUT_POWER_MIN = 0.6;
+  const AI_TAKEOUT_POWER_RANGE = 0.08;
+  const AI_DRAW_POWER_MIN = 0.48;
+  const AI_DRAW_POWER_RANGE = 0.09;
+  const AI_AIM_WOBBLE = 22; // px of random aim error at the target
 
   // ---- DOM ----
   const scoreRedEl = document.getElementById('score-red');
@@ -62,6 +70,9 @@
   const startOverlay = document.getElementById('start-overlay');
   const inputTeamRed = document.getElementById('input-team-red');
   const inputTeamYellow = document.getElementById('input-team-yellow');
+  const opponentSingleBtn = document.getElementById('opponent-single');
+  const opponentTwoBtn = document.getElementById('opponent-two');
+  const labelTeamYellow = document.getElementById('label-team-yellow');
   const modeStandardBtn = document.getElementById('mode-standard');
   const modeDoublesBtn = document.getElementById('mode-doubles');
   const selectEnds = document.getElementById('select-ends');
@@ -83,6 +94,8 @@
   let state = {
     started: false, // true once team names are set and the game has begun
     teamNames: { red: 'Red', yellow: 'Yellow' },
+    opponentMode: 'single', // 'single' (vs computer) or 'two-team' (pass and play)
+    aiPending: false, // true while the computer's next shot is "thinking"
     mode: 'standard',
     totalShots: GAME_MODES.standard.stonesPerTeam * 2,
     endNumber: 1,
@@ -128,6 +141,7 @@
     state.endOver = false;
     endOverlay.classList.remove('visible');
     updateUI();
+    maybeComputerTurn();
   }
 
   function startNewGame() {
@@ -139,6 +153,17 @@
     state.burnsUsed = 0;
     resetEndStones();
   }
+
+  function setOpponentMode(opponentMode) {
+    state.opponentMode = opponentMode;
+    opponentSingleBtn.classList.toggle('selected', opponentMode === 'single');
+    opponentTwoBtn.classList.toggle('selected', opponentMode === 'two-team');
+    labelTeamYellow.textContent = opponentMode === 'single' ? 'Computer team' : 'Yellow team';
+    inputTeamYellow.placeholder = opponentMode === 'single' ? 'Joshua' : 'Yellow';
+  }
+  opponentSingleBtn.addEventListener('click', () => setOpponentMode('single'));
+  opponentTwoBtn.addEventListener('click', () => setOpponentMode('two-team'));
+  setOpponentMode('single');
 
   function setMode(mode) {
     state.mode = mode;
@@ -152,7 +177,8 @@
 
   function startGame() {
     state.teamNames.red = inputTeamRed.value.trim() || 'Red';
-    state.teamNames.yellow = inputTeamYellow.value.trim() || 'Yellow';
+    const yellowDefault = state.opponentMode === 'single' ? 'Joshua' : 'Yellow';
+    state.teamNames.yellow = inputTeamYellow.value.trim() || yellowDefault;
     teamNameRedEl.textContent = state.teamNames.red;
     teamNameYellowEl.textContent = state.teamNames.yellow;
     state.totalEnds = parseInt(selectEnds.value, 10);
@@ -197,6 +223,7 @@
   }
 
   function canAim() {
+    if (state.opponentMode === 'single' && currentTeam() === COMPUTER_TEAM) return false;
     return state.started && !state.sliding && !state.endOver && shotsRemaining() > 0;
   }
 
@@ -248,8 +275,12 @@
     dist = Math.min(dist, MAX_DRAG);
     const power = dist / MAX_DRAG;
     const angle = Math.atan2(dy, dx);
-    const speed = power * MAX_POWER_SPEED;
+    throwStone(angle, power, state.curlDir);
+  }
 
+  function throwStone(angle, power, curlDir) {
+    const hack = hackPos();
+    const speed = power * MAX_POWER_SPEED;
     const stone = {
       x: hack.x,
       y: hack.y,
@@ -258,15 +289,72 @@
       team: currentTeam(),
       resting: false,
       outOfPlay: false,
-      curlDir: state.curlDir,
+      curlDir,
       picked: false,
       burned: false,
       peelWeight: power >= 1,
+      hasRestedBefore: false,
     };
     state.stones.push(stone);
     state.sliding = true;
     updateUI();
     if (stone.peelWeight) showToast('Peel Weight!');
+  }
+
+  // ---- Computer opponent (single-team mode) ----
+  function chooseAiShot() {
+    const myTeam = currentTeam();
+    const inPlay = state.stones.filter((s) => !s.outOfPlay);
+    const distToButton = (s) => Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y);
+    const opponentInHouse = inPlay
+      .filter((s) => s.team !== myTeam && distToButton(s) <= RINGS[0].r)
+      .sort((a, b) => distToButton(a) - distToButton(b));
+
+    let targetX;
+    let targetY;
+    let power;
+    if (opponentInHouse.length > 0 && Math.random() < 0.7) {
+      const target = opponentInHouse[0];
+      targetX = target.x;
+      targetY = target.y;
+      power = AI_TAKEOUT_POWER_MIN + Math.random() * AI_TAKEOUT_POWER_RANGE;
+    } else {
+      targetX = HOUSE_X;
+      targetY = HOUSE_Y;
+      power = AI_DRAW_POWER_MIN + Math.random() * AI_DRAW_POWER_RANGE;
+    }
+
+    // Human-like imprecision.
+    targetX += (Math.random() - 0.5) * AI_AIM_WOBBLE;
+    targetY += (Math.random() - 0.5) * AI_AIM_WOBBLE;
+    power = Math.min(1, Math.max(0.3, power + (Math.random() - 0.5) * 0.03));
+
+    const hack = hackPos();
+    const angle = Math.atan2(targetY - hack.y, targetX - hack.x);
+    const curlDir = Math.random() < 0.5 ? -1 : 1;
+    return { angle, power, curlDir };
+  }
+
+  function computerThrow() {
+    const shot = chooseAiShot();
+    throwStone(shot.angle, shot.power, shot.curlDir);
+  }
+
+  function maybeComputerTurn() {
+    if (state.opponentMode !== 'single') return;
+    if (!state.started || state.intro || state.sliding || state.endOver || state.dragging) return;
+    if (state.aiPending || shotsRemaining() <= 0) return;
+    if (currentTeam() !== COMPUTER_TEAM) return;
+
+    state.aiPending = true;
+    const delay = AI_THINK_DELAY_MIN + Math.random() * (AI_THINK_DELAY_MAX - AI_THINK_DELAY_MIN);
+    setTimeout(() => {
+      state.aiPending = false;
+      const stillComputersTurn = state.opponentMode === 'single' && state.started && !state.intro
+        && !state.sliding && !state.endOver && !state.dragging
+        && currentTeam() === COMPUTER_TEAM && shotsRemaining() > 0;
+      if (stillComputersTurn) computerThrow();
+    }, delay);
   }
 
   canvas.addEventListener('mousedown', onPointerDown);
@@ -463,11 +551,14 @@
   }
 
   function finalizeStoneRest(stone) {
-    // A stone that stops touching or short of the hog line (hasn't fully crossed it) is "hogged" and removed.
-    if (!stone.outOfPlay && stone.y + STONE_R >= FAR_HOG_Y) {
+    // A stone that stops touching or short of the hog line (hasn't fully crossed it) is "hogged" and
+    // removed — but only on its own original delivery. A stone that already cleared the hog line on
+    // an earlier shot and later gets knocked back behind it by a hit is not re-hogged.
+    if (!stone.hasRestedBefore && !stone.outOfPlay && stone.y + STONE_R >= FAR_HOG_Y) {
       stone.outOfPlay = true;
       showToast('Hogged! 🐷');
     }
+    stone.hasRestedBefore = true;
   }
 
   function maybeAdvanceTurn() {
@@ -476,6 +567,7 @@
       finishEnd();
     } else {
       updateUI();
+      maybeComputerTurn();
     }
   }
 

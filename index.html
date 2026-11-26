@@ -31,6 +31,13 @@
         <div class="end-overlay-card">
           <h2>Set up your game</h2>
           <div class="team-name-field">
+            <label>Opponent</label>
+            <div class="turn-toggle mode-toggle">
+              <button type="button" id="opponent-single" class="turn-btn">Single Team (vs Computer)</button>
+              <button type="button" id="opponent-two" class="turn-btn">Two Teams</button>
+            </div>
+          </div>
+          <div class="team-name-field">
             <label>Game type</label>
             <div class="turn-toggle mode-toggle">
               <button type="button" id="mode-standard" class="turn-btn">Standard (8 stones)</button>
@@ -51,7 +58,7 @@
             <input type="text" id="input-team-red" maxlength="20" placeholder="Red" autofocus>
           </div>
           <div class="team-name-field">
-            <label for="input-team-yellow">Yellow team</label>
+            <label for="input-team-yellow" id="label-team-yellow">Yellow team</label>
             <input type="text" id="input-team-yellow" maxlength="20" placeholder="Yellow">
           </div>
           <button id="start-game-btn">Start game</button>
