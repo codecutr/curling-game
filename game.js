@@ -33,7 +33,7 @@
   const SWEEP_CURL_MULT = 0.45;
   const STOP_SPEED = 4; // px/s below which a stone is considered stopped
   const MAX_PICKS_PER_GAME = 2;
-  const PICK_CHANCE_PER_SEC = 0.04; // chance per second an unswept sliding stone picks
+  const PICK_CHANCE_PER_SEC = 0.008; // chance per second an unswept sliding stone picks
   const PICK_ANGLE_MIN = 15 * (Math.PI / 180);
   const PICK_ANGLE_MAX = 35 * (Math.PI / 180);
   const MAX_BURNS_PER_GAME = 1;
